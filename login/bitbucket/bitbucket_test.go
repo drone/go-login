@@ -9,42 +9,35 @@ import (
 	"testing"
 )
 
-func TestWithClient(t *testing.T) {
+func TestAuthorizer(t *testing.T) {
 	c := &http.Client{}
-	a := &Authorizer{}
-	WithClient(c)(a)
-	if got, want := a.client, c; got != want {
+	v := New(
+		WithClient(c),
+		WithClientID("3da54155991"),
+		WithClientSecret("5012f6c60b2"),
+		WithRedirectURL("http://company.com/login"),
+	).(*Authorizer)
+
+	if got, want := v.client, c; got != want {
 		t.Errorf("Expect custom client")
 	}
-}
 
-func TestWithClientID(t *testing.T) {
-	a := &Authorizer{}
-	WithClientID("3da54155991")(a)
-	if got, want := a.clientID, "3da54155991"; got != want {
+	if got, want := v.clientID, "3da54155991"; got != want {
 		t.Errorf("Expect custom client_id")
 	}
-}
 
-func TestWithClientSecret(t *testing.T) {
-	a := &Authorizer{}
-	WithClientSecret("5012f6c60b2")(a)
-	if got, want := a.clientSecret, "5012f6c60b2"; got != want {
+	if got, want := v.clientSecret, "5012f6c60b2"; got != want {
 		t.Errorf("Expect custom client_secret")
 	}
-}
 
-func TestWithRedirectURL(t *testing.T) {
-	a := &Authorizer{}
-	WithRedirectURL("http://company.com/login")(a)
-	if got, want := a.redirectURL, "http://company.com/login"; got != want {
+	if got, want := v.redirectURL, "http://company.com/login"; got != want {
 		t.Errorf("Expect custom redirect_uri")
 	}
 }
 
-func TestDefaultAuthorizer(t *testing.T) {
-	a := newDefault()
-	if got, want := a.client, http.DefaultClient; got != want {
-		t.Errorf("Expect default client is http.DefaultClient")
+func TestAuthorizerDefault(t *testing.T) {
+	v := New().(*Authorizer)
+	if got, want := v.client, http.DefaultClient; got != want {
+		t.Errorf("Expect custom client")
 	}
 }
