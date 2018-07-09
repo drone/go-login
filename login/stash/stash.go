@@ -5,6 +5,7 @@
 package stash
 
 import (
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/internal/oauth1"
 )
 
@@ -22,89 +22,15 @@ const (
 	accessTokenURL    = "%s/plugins/servlet/oauth/access-token"
 )
 
-// Option configures an authorization handler option.
-type Option func(a *Authorizer)
-
-// WithClient configures the authorization handler with a
-// custom http.Client.
-func WithClient(client *http.Client) Option {
-	return func(a *Authorizer) {
-		a.client = client
-	}
-}
-
-// WithConsumerKey configures the authorization handler with
-// the oauth_consumer_key.
-func WithConsumerKey(consumerKey string) Option {
-	return func(a *Authorizer) {
-		a.consumerKey = consumerKey
-	}
-}
-
-// WithConsumerSecret configures the authorization handler
-// with the oauth_consumer_secret.
-func WithConsumerSecret(consumerSecret string) Option {
-	return func(a *Authorizer) {
-		a.consumerSecret = consumerSecret
-	}
-}
-
-// WithCallbackURL configures the authorization handler
-// with the oauth_callback_url
-func WithCallbackURL(callbackURL string) Option {
-	return func(a *Authorizer) {
-		a.callbackURL = callbackURL
-	}
-}
-
-// WithPrivateKeyFile configures the authorization handler
-// with the oauth private rsa key for signing requests.
-func WithPrivateKeyFile(path string) Option {
-	d, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	return WithPrivateKey(d)
-}
-
-// WithPrivateKey configures the authorization handler
-// with the oauth private rsa key for signing requests.
-func WithPrivateKey(data []byte) Option {
-	return func(a *Authorizer) {
-		p, _ := pem.Decode(data)
-		k, err := x509.ParsePKCS1PrivateKey(p.Bytes)
-		if err != nil {
-			panic(err)
-		}
-		a.signer = &oauth1.RSASigner{PrivateKey: k}
-	}
-}
-
 // Authorizer configures the Bitbucket Server (Stash)
 // authorization provider.
 type Authorizer struct {
-	callbackURL    string
-	address        string
-	consumerKey    string
-	consumerSecret string
-	signer         oauth1.Signer
-	client         *http.Client
-}
-
-func newDefault() *Authorizer {
-	return &Authorizer{
-		client: http.DefaultClient,
-	}
-}
-
-// New returns a Bitbucket Server authorization provider.
-func New(address string, opts ...Option) login.Authorizer {
-	auther := newDefault()
-	auther.address = strings.TrimPrefix(address, "/")
-	for _, opt := range opts {
-		opt(auther)
-	}
-	return auther
+	Address        string
+	ConsumerKey    string
+	ConsumerSecret string
+	CallbackURL    string
+	PrivateKey     *rsa.PrivateKey
+	Client         *http.Client
 }
 
 // Authorize returns a http.Handler that runs h at the
@@ -112,14 +38,35 @@ func New(address string, opts ...Option) login.Authorizer {
 // authorization details are available to h in the
 // http.Request context.
 func (a *Authorizer) Authorize(h http.Handler) http.Handler {
+	server := strings.TrimSuffix(a.Address, "/")
+	signer := &oauth1.RSASigner{
+		PrivateKey: a.PrivateKey,
+	}
 	return oauth1.Handler(h, &oauth1.Config{
-		Signer:           a.signer,
-		Client:           a.client,
-		ConsumerKey:      a.consumerKey,
-		ConsumerSecret:   a.consumerSecret,
-		CallbackURL:      a.callbackURL,
-		AccessTokenURL:   fmt.Sprintf(accessTokenURL, a.address),
-		AuthorizationURL: fmt.Sprintf(authorizeTokenURL, a.address),
-		RequestTokenURL:  fmt.Sprintf(requestTokenURL, a.address),
+		Signer:           signer,
+		Client:           a.Client,
+		ConsumerKey:      a.ConsumerKey,
+		ConsumerSecret:   a.ConsumerSecret,
+		CallbackURL:      a.CallbackURL,
+		AccessTokenURL:   fmt.Sprintf(accessTokenURL, server),
+		AuthorizationURL: fmt.Sprintf(authorizeTokenURL, server),
+		RequestTokenURL:  fmt.Sprintf(requestTokenURL, server),
 	})
+}
+
+// ParsePrivateKeyFile is a helper function that parses an
+// RSA Private Key file encoded in PEM format.
+func ParsePrivateKeyFile(path string) (*rsa.PrivateKey, error) {
+	d, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePrivateKey(d)
+}
+
+// ParsePrivateKey is a helper function that parses an RSA
+// Private Key encoded in PEM format.
+func ParsePrivateKey(data []byte) (*rsa.PrivateKey, error) {
+	p, _ := pem.Decode(data)
+	return x509.ParsePKCS1PrivateKey(p.Bytes)
 }

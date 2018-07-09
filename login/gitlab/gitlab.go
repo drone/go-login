@@ -8,87 +8,17 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/internal/oauth2"
 )
 
 // Authorizer configures the GitLab auth provider.
 type Authorizer struct {
-	scope        []string
-	clientID     string
-	clientSecret string
-	redirectURL  string
-	server       string
-	client       *http.Client
-}
-
-func newDefault() *Authorizer {
-	return &Authorizer{
-		server: "https://gitlab.com",
-		client: http.DefaultClient,
-	}
-}
-
-// Option configures an authorization handler option.
-type Option func(a *Authorizer)
-
-// WithClient configures the authorization handler with a
-// custom http.Client.
-func WithClient(client *http.Client) Option {
-	return func(a *Authorizer) {
-		a.client = client
-	}
-}
-
-// WithClientID configures the authorization handler with
-// the client_id.
-func WithClientID(clientID string) Option {
-	return func(a *Authorizer) {
-		a.clientID = clientID
-	}
-}
-
-// WithClientSecret configures the authorization handler
-// with the client_secret.
-func WithClientSecret(clientSecret string) Option {
-	return func(a *Authorizer) {
-		a.clientSecret = clientSecret
-	}
-}
-
-// WithRedirectURL configures the authorization handler
-// with the redirect_url
-func WithRedirectURL(redirectURL string) Option {
-	return func(a *Authorizer) {
-		a.redirectURL = redirectURL
-	}
-}
-
-// WithScope configures the authorization handler with the
-// these scopes.
-func WithScope(scope ...string) Option {
-	return func(a *Authorizer) {
-		a.scope = scope
-	}
-}
-
-// WithAddress configures the authorization handler with
-// the the self-hosted GitLab server address.
-func WithAddress(server string) Option {
-	return func(a *Authorizer) {
-		if server != "" {
-			a.server = strings.TrimSuffix(server, "/")
-		}
-	}
-}
-
-// New returns a GitLab authorization provider.
-func New(opts ...Option) login.Authorizer {
-	auther := newDefault()
-	for _, opt := range opts {
-		opt(auther)
-	}
-	return auther
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+	Server       string
+	Scope        []string
+	Client       *http.Client
 }
 
 // Authorize returns a http.Handler that runs h at the
@@ -96,14 +26,22 @@ func New(opts ...Option) login.Authorizer {
 // authorization details are available to h in the
 // http.Request context.
 func (a *Authorizer) Authorize(h http.Handler) http.Handler {
+	server := normalizeAddress(a.Server)
 	return oauth2.Handler(h, &oauth2.Config{
 		BasicAuthOff:     true,
-		Client:           a.client,
-		ClientID:         a.clientID,
-		ClientSecret:     a.clientSecret,
-		RedirectURL:      a.redirectURL,
-		AccessTokenURL:   a.server + "/oauth/token",
-		AuthorizationURL: a.server + "/oauth/authorize",
-		Scope:            a.scope,
+		Client:           a.Client,
+		ClientID:         a.ClientID,
+		ClientSecret:     a.ClientSecret,
+		RedirectURL:      a.RedirectURL,
+		AccessTokenURL:   server + "/oauth/token",
+		AuthorizationURL: server + "/oauth/authorize",
+		Scope:            a.Scope,
 	})
+}
+
+func normalizeAddress(address string) string {
+	if address == "" {
+		return "https://gitlab.com"
+	}
+	return strings.TrimSuffix(address, "/")
 }

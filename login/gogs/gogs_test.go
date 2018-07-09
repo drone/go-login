@@ -9,24 +9,45 @@ import (
 	"testing"
 )
 
-func TestWithClient(t *testing.T) {
-	c := &http.Client{}
-	h := New("https://try.gogs.io", WithClient(c))
-	if got, want := h.(*Authorizer).client, c; got != want {
+func TestAuthorizer(t *testing.T) {
+	h := http.RedirectHandler("/", 302)
+	c := new(http.Client)
+	a := Authorizer{
+		Label:  "drone",
+		Login:  "/path/to/login",
+		Server: "https://try.gogs.io/",
+		Client: c,
+	}
+	v := a.Authorize(h).(*handler)
+	if got, want := v.login, "/path/to/login"; got != want {
+		t.Errorf("Expect login redirect url %q, got %q", want, got)
+	}
+	if got, want := v.server, "https://try.gogs.io"; got != want {
+		t.Errorf("Expect server address %q, got %q", want, got)
+	}
+	if got, want := v.label, "drone"; got != want {
+		t.Errorf("Expect label %q, got %q", want, got)
+	}
+	if got, want := v.client, c; got != want {
 		t.Errorf("Expect custom client")
 	}
-}
-
-func TestWithTokenName(t *testing.T) {
-	h := New("https://try.gogs.io", WithTokenName("some_token"))
-	if got, want := h.(*Authorizer).label, "some_token"; got != want {
-		t.Errorf("Expect token name url %q, got %q", want, got)
+	if got, want := v.next, h; got != want {
+		t.Errorf("Expect handler wrapped")
 	}
 }
 
-func TestWithLoginRedirect(t *testing.T) {
-	h := New("https://try.gogs.io", WithLoginRedirect("/path/to/login"))
-	if got, want := h.(*Authorizer).login, "/path/to/login"; got != want {
-		t.Errorf("Expect login redirect url %q, got %q", want, got)
+func TestAuthorizerDefault(t *testing.T) {
+	a := Authorizer{
+		Login:  "/path/to/login",
+		Server: "https://try.gogs.io",
+	}
+	v := a.Authorize(
+		http.NotFoundHandler(),
+	).(*handler)
+	if got, want := v.label, "default"; got != want {
+		t.Errorf("Expect label %q, got %q", want, got)
+	}
+	if got, want := v.client, http.DefaultClient; got != want {
+		t.Errorf("Expect custom client")
 	}
 }

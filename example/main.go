@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -39,53 +40,51 @@ func main() {
 		os.Exit(0)
 	}
 
-	var auther http.Handler
+	var auther login.Authorizer
 	switch *provider {
 	case "gogs", "gitea":
-		auther = gogs.New(*providerURL,
-			gogs.WithLoginRedirect("/login/form"),
-		).Authorize(
-			http.HandlerFunc(details),
-		)
+		auther = &gogs.Authorizer{
+			Login:  "/login/form",
+			Server: *providerURL,
+		}
 	case "gitlab":
-		auther = gitlab.New(
-			gitlab.WithClientID(*clientID),
-			gitlab.WithClientSecret(*clientSecret),
-			gitlab.WithRedirectURL(*redirectURL),
-			gitlab.WithScope("read_user", "api"),
-		).Authorize(
-			http.HandlerFunc(details),
-		)
+		auther = &gitlab.Authorizer{
+			ClientID:     *clientID,
+			ClientSecret: *clientSecret,
+			RedirectURL:  *redirectURL,
+			Scope:        []string{"read_user", "api"},
+		}
 	case "github":
-		auther = github.New(
-			github.WithClientID(*clientID),
-			github.WithClientSecret(*clientSecret),
-			github.WithScope("repo", "user", "read:org"),
-		).Authorize(
-			http.HandlerFunc(details),
-		)
+		auther = &github.Authorizer{
+			ClientID:     *clientID,
+			ClientSecret: *clientSecret,
+			Scope:        []string{"repo", "user", "read:org"},
+		}
 	case "bitbucket":
-		auther = bitbucket.New(
-			bitbucket.WithClientID(*clientID),
-			bitbucket.WithClientSecret(*clientSecret),
-			bitbucket.WithRedirectURL(*redirectURL),
-		).Authorize(
-			http.HandlerFunc(details),
-		)
+		auther = &bitbucket.Authorizer{
+			ClientID:     *clientID,
+			ClientSecret: *clientSecret,
+			RedirectURL:  *redirectURL,
+		}
 	case "stash":
-		auther = stash.New(*providerURL,
-			stash.WithConsumerKey(*consumerKey),
-			stash.WithPrivateKeyFile(*consumerRsa),
-			stash.WithCallbackURL(*redirectURL),
-		).Authorize(
-			http.HandlerFunc(details),
-		)
+		privateKey, err := stash.ParsePrivateKeyFile(*consumerRsa)
+		if err != nil {
+			log.Fatalln("Cannot parse Private Key. %s", err)
+		}
+		auther = &stash.Authorizer{
+			Address:     *providerURL,
+			CallbackURL: *redirectURL,
+			ConsumerKey: *consumerKey,
+			PrivateKey:  privateKey,
+		}
 	}
 
 	// handles the authorization flow and displays the
 	// authorization results at completion.
 	http.Handle("/login/form", http.HandlerFunc(form))
-	http.Handle("/login", auther)
+	http.Handle("/login", auther.Authorize(
+		http.HandlerFunc(details),
+	))
 
 	// redirects the user to the login handler.
 	http.Handle("/", http.RedirectHandler("/login", http.StatusSeeOther))
