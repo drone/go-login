@@ -6,8 +6,26 @@ package login
 
 import (
 	"context"
+	"net/http"
 	"time"
 )
+
+// Authorizer returns a http.Handler that runs h at the
+// completion of the authorization flow. The authorization
+// results are available to h in the http.Request context.
+type Authorizer interface {
+	Authorize(h http.Handler) http.Handler
+}
+
+// Middleware defines a Login middleware. The middleware
+// wraps the http.Handler and intercepts the http.Request
+// to perform authentication. The http.Handler is invoked
+// when authentication is complete, with authentication
+// details (oauth token, etc) passed to the handler via
+// the http.Request context.
+type Middleware interface {
+	Wrap(h http.Handler) http.Handler
+}
 
 // Token represents an authorization token.
 type Token struct {

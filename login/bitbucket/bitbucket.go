@@ -7,72 +7,84 @@ package bitbucket
 import (
 	"net/http"
 
+	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/internal/oauth2"
 )
 
-// Options provides the Bitbucket authentication options.
-type Options struct {
-	redirectURL  string
-	clientID     string
-	clientSecret string
-	client       *http.Client
-}
-
-func createOptions() *Options {
-	return &Options{
-		client: http.DefaultClient,
-	}
-}
+const (
+	accessTokenURL   = "https://bitbucket.org/site/oauth2/access_token"
+	authorizationURL = "https://bitbucket.org/site/oauth2/authorize"
+)
 
 // Option configures an authorization handler option.
-type Option func(o *Options)
+type Option func(a *Authorizer)
 
 // WithClient configures the authorization handler with a
 // custom http.Client.
 func WithClient(client *http.Client) Option {
-	return func(o *Options) {
-		o.client = client
+	return func(a *Authorizer) {
+		a.client = client
 	}
 }
 
 // WithClientID configures the authorization handler with
 // the client_id.
 func WithClientID(clientID string) Option {
-	return func(o *Options) {
-		o.clientID = clientID
+	return func(a *Authorizer) {
+		a.clientID = clientID
 	}
 }
 
 // WithClientSecret configures the authorization handler
 // with the client_secret.
 func WithClientSecret(clientSecret string) Option {
-	return func(o *Options) {
-		o.clientSecret = clientSecret
+	return func(a *Authorizer) {
+		a.clientSecret = clientSecret
 	}
 }
 
 // WithRedirectURL configures the authorization handler
 // with the redirect_url
 func WithRedirectURL(redirectURL string) Option {
-	return func(o *Options) {
-		o.redirectURL = redirectURL
+	return func(a *Authorizer) {
+		a.redirectURL = redirectURL
 	}
 }
 
-// New returns a http.Handler that runs h at the completion
-// of the Bitbucket authorization flow. The Bitbucket
-// authorization is passed to h in the http.Request context.
-func New(h http.Handler, opt ...Option) http.Handler {
-	opts := createOptions()
-	for _, fn := range opt {
-		fn(opts)
+// Authorizer configures a Bitbucket auth provider.
+type Authorizer struct {
+	redirectURL  string
+	clientID     string
+	clientSecret string
+	client       *http.Client
+}
+
+func newDefault() *Authorizer {
+	return &Authorizer{
+		client: http.DefaultClient,
 	}
+}
+
+// New returns a Bitbucket authorization provider.
+func New(opts ...Option) login.Authorizer {
+	auther := newDefault()
+	for _, opt := range opts {
+		opt(auther)
+	}
+	return auther
+}
+
+// Authorize returns a http.Handler that runs h at the
+// completion of the GitHub authorization flow. The GitHub
+// authorization details are available to h in the
+// http.Request context.
+func (a *Authorizer) Authorize(h http.Handler) http.Handler {
 	return oauth2.Handler(h, &oauth2.Config{
-		Client:           opts.client,
-		ClientID:         opts.clientID,
-		ClientSecret:     opts.clientSecret,
-		RedirectURL:      opts.redirectURL,
-		AccessTokenURL:   "https://bitbucket.org/site/oauth2/access_token",
-		AuthorizationURL: "https://bitbucket.org/site/oauth2/authorize",
+		Client:           a.client,
+		ClientID:         a.clientID,
+		ClientSecret:     a.clientSecret,
+		RedirectURL:      a.redirectURL,
+		AccessTokenURL:   accessTokenURL,
+		AuthorizationURL: authorizationURL,
 	})
 }

@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/internal/oauth2"
 )
 
-// Options provides the GitHub authentication options.
-type Options struct {
+// Authorizer configures a GitHub authorization
+// provider.
+type Authorizer struct {
 	scope        []string
 	clientID     string
 	clientSecret string
@@ -20,20 +22,20 @@ type Options struct {
 	client       *http.Client
 }
 
-func defaultOptions() *Options {
-	return &Options{
+func newDefault() *Authorizer {
+	return &Authorizer{
 		server: "https://github.com",
 		client: http.DefaultClient,
 	}
 }
 
 // Option configures an authorization handler option.
-type Option func(o *Options)
+type Option func(a *Authorizer)
 
 // WithClient configures the authorization handler with a
 // custom http.Client.
 func WithClient(client *http.Client) Option {
-	return func(o *Options) {
+	return func(o *Authorizer) {
 		o.client = client
 	}
 }
@@ -41,7 +43,7 @@ func WithClient(client *http.Client) Option {
 // WithClientID configures the authorization handler with
 // the client_id.
 func WithClientID(clientID string) Option {
-	return func(o *Options) {
+	return func(o *Authorizer) {
 		o.clientID = clientID
 	}
 }
@@ -49,7 +51,7 @@ func WithClientID(clientID string) Option {
 // WithClientSecret configures the authorization handler
 // with the client_secret.
 func WithClientSecret(clientSecret string) Option {
-	return func(o *Options) {
+	return func(o *Authorizer) {
 		o.clientSecret = clientSecret
 	}
 }
@@ -57,7 +59,7 @@ func WithClientSecret(clientSecret string) Option {
 // WithScope configures the authorization handler with the
 // these scopes.
 func WithScope(scope ...string) Option {
-	return func(o *Options) {
+	return func(o *Authorizer) {
 		o.scope = scope
 	}
 }
@@ -65,26 +67,32 @@ func WithScope(scope ...string) Option {
 // WithAddress configures the authorization handler with
 // a GitHub enterprise server address.
 func WithAddress(server string) Option {
-	return func(o *Options) {
+	return func(o *Authorizer) {
 		o.server = strings.TrimSuffix(server, "/")
 	}
 }
 
-// New returns a http.Handler that runs h at the completion
-// of the GitHub authorization flow. The GitHub authorization
-// is availabe to h in the http.Request context.
-func New(h http.Handler, opt ...Option) http.Handler {
-	opts := defaultOptions()
-	for _, fn := range opt {
-		fn(opts)
+// New returns a GitHub authorization provider.
+func New(opts ...Option) login.Authorizer {
+	v := newDefault()
+	for _, opt := range opts {
+		opt(v)
 	}
+	return v
+}
+
+// Authorize returns a http.Handler that runs h at the
+// completion of the GitHub authorization flow. The GitHub
+// authorization details are available to h in the
+// http.Request context.
+func (a *Authorizer) Authorize(h http.Handler) http.Handler {
 	return oauth2.Handler(h, &oauth2.Config{
 		BasicAuthOff:     true,
-		Client:           opts.client,
-		ClientID:         opts.clientID,
-		ClientSecret:     opts.clientSecret,
-		AccessTokenURL:   opts.server + "/login/oauth/access_token",
-		AuthorizationURL: opts.server + "/login/oauth/authorize",
-		Scope:            opts.scope,
+		Client:           a.client,
+		ClientID:         a.clientID,
+		ClientSecret:     a.clientSecret,
+		AccessTokenURL:   a.server + "/login/oauth/access_token",
+		AuthorizationURL: a.server + "/login/oauth/authorize",
+		Scope:            a.scope,
 	})
 }

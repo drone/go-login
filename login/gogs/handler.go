@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package gitea
+package gogs
 
 import (
 	"bytes"
@@ -25,23 +25,6 @@ type handler struct {
 	login  string
 	server string
 	client *http.Client
-}
-
-// New returns a Handler that runs h at the completion of
-// the gitea authorization flow. The gitea authorization
-// is availabe to h in the http.Request context.
-func New(h http.Handler, opt ...Option) http.Handler {
-	opts := defaultOptions()
-	for _, fn := range opt {
-		fn(opts)
-	}
-	return &handler{
-		next:   h,
-		label:  opts.label,
-		login:  opts.login,
-		server: opts.server,
-		client: opts.client,
-	}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

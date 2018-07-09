@@ -12,7 +12,6 @@ import (
 
 	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/bitbucket"
-	"github.com/drone/go-login/login/gitea"
 	"github.com/drone/go-login/login/github"
 	"github.com/drone/go-login/login/gitlab"
 	"github.com/drone/go-login/login/gogs"
@@ -42,54 +41,51 @@ func main() {
 
 	var auther http.Handler
 	switch *provider {
-	case "gogs":
-		auther = gogs.New(
-			http.HandlerFunc(details),
-			gogs.WithAddress(*providerURL),
+	case "gogs", "gitea":
+		auther = gogs.New(*providerURL,
 			gogs.WithLoginRedirect("/login/form"),
-		)
-	case "gitea":
-		auther = gitea.New(
+		).Authorize(
 			http.HandlerFunc(details),
-			gitea.WithAddress(*providerURL),
-			gitea.WithLoginRedirect("/login/form"),
 		)
 	case "gitlab":
 		auther = gitlab.New(
-			http.HandlerFunc(details),
 			gitlab.WithClientID(*clientID),
 			gitlab.WithClientSecret(*clientSecret),
 			gitlab.WithRedirectURL(*redirectURL),
 			gitlab.WithScope("read_user", "api"),
+		).Authorize(
+			http.HandlerFunc(details),
 		)
 	case "github":
 		auther = github.New(
-			http.HandlerFunc(details),
 			github.WithClientID(*clientID),
 			github.WithClientSecret(*clientSecret),
 			github.WithScope("repo", "user", "read:org"),
+		).Authorize(
+			http.HandlerFunc(details),
 		)
 	case "bitbucket":
 		auther = bitbucket.New(
-			http.HandlerFunc(details),
 			bitbucket.WithClientID(*clientID),
 			bitbucket.WithClientSecret(*clientSecret),
 			bitbucket.WithRedirectURL(*redirectURL),
+		).Authorize(
+			http.HandlerFunc(details),
 		)
 	case "stash":
-		auther = stash.New(
-			http.HandlerFunc(details),
+		auther = stash.New(*providerURL,
 			stash.WithConsumerKey(*consumerKey),
 			stash.WithPrivateKeyFile(*consumerRsa),
 			stash.WithCallbackURL(*redirectURL),
-			stash.WithAddress(*providerURL),
+		).Authorize(
+			http.HandlerFunc(details),
 		)
 	}
 
 	// handles the authorization flow and displays the
 	// authorization results at completion.
-	http.Handle("/login", auther)
 	http.Handle("/login/form", http.HandlerFunc(form))
+	http.Handle("/login", auther)
 
 	// redirects the user to the login handler.
 	http.Handle("/", http.RedirectHandler("/login", http.StatusSeeOther))

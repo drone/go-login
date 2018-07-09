@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package gitea
+package gogs
 
 import (
 	"context"
@@ -73,25 +73,25 @@ func TestLogin(t *testing.T) {
 		gock.Flush()
 
 		if test.tokens != nil {
-			gock.New("https://gitea.io").
+			gock.New("https://gogs.io").
 				Get("/api/v1/users/janedoe/token").
 				MatchHeader("Authorization", test.auth).
 				Reply(200).
 				JSON(test.tokens)
 		} else {
-			gock.New("https://gitea.io").
+			gock.New("https://gogs.io").
 				Get("/api/v1/users/janedoe/token").
 				Reply(404)
 		}
 
 		if test.token != nil {
-			gock.New("https://gitea.io").
+			gock.New("https://gogs.io").
 				Post("/api/v1/users/janedoe/token").
 				MatchHeader("Authorization", test.auth).
 				Reply(200).
 				JSON(test.token)
 		} else {
-			gock.New("https://gitea.io").
+			gock.New("https://gogs.io").
 				Post("/api/v1/users/janedoe/token").
 				Reply(404)
 		}
@@ -101,9 +101,8 @@ func TestLogin(t *testing.T) {
 			ctx = r.Context()
 		}
 
-		h := New(
+		h := New("https://gogs.io").Authorize(
 			http.HandlerFunc(fn),
-			WithAddress("https://gitea.io"),
 		)
 
 		data := url.Values{
@@ -139,11 +138,11 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginRedirect(t *testing.T) {
-	h := New(
-		http.NotFoundHandler(),
+	h := New("https://gogs.io",
 		WithLoginRedirect("/login/form"),
-		WithAddress("https://gitea.io"),
-	).(*handler)
+	).Authorize(
+		http.NotFoundHandler(),
+	)
 
 	r := httptest.NewRequest("POST", "/login", nil)
 	w := httptest.NewRecorder()
