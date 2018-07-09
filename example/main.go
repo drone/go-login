@@ -12,9 +12,11 @@ import (
 
 	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/bitbucket"
+	"github.com/drone/go-login/login/gitea"
 	"github.com/drone/go-login/login/github"
 	"github.com/drone/go-login/login/gitlab"
 	"github.com/drone/go-login/login/gogs"
+	"github.com/drone/go-login/login/stash"
 )
 
 var (
@@ -22,6 +24,8 @@ var (
 	providerURL  = flag.String("provider-url", "", "")
 	clientID     = flag.String("client-id", "", "")
 	clientSecret = flag.String("client-secret", "", "")
+	consumerKey  = flag.String("consumer-key", "", "")
+	consumerRsa  = flag.String("consumer-private-key", "", "")
 	redirectURL  = flag.String("redirect-url", "http://localhost:8080/login", "")
 	address      = flag.String("address", ":8080", "")
 	help         = flag.Bool("help", false, "")
@@ -38,11 +42,17 @@ func main() {
 
 	var auther http.Handler
 	switch *provider {
-	case "gogs", "gitea":
+	case "gogs":
 		auther = gogs.New(
 			http.HandlerFunc(details),
 			gogs.WithAddress(*providerURL),
 			gogs.WithLoginRedirect("/login/form"),
+		)
+	case "gitea":
+		auther = gitea.New(
+			http.HandlerFunc(details),
+			gitea.WithAddress(*providerURL),
+			gitea.WithLoginRedirect("/login/form"),
 		)
 	case "gitlab":
 		auther = gitlab.New(
@@ -66,6 +76,14 @@ func main() {
 			bitbucket.WithClientSecret(*clientSecret),
 			bitbucket.WithRedirectURL(*redirectURL),
 		)
+	case "stash":
+		auther = stash.New(
+			http.HandlerFunc(details),
+			stash.WithConsumerKey(*consumerKey),
+			stash.WithPrivateKeyFile(*consumerRsa),
+			stash.WithCallbackURL(*redirectURL),
+			stash.WithAddress(*providerURL),
+		)
 	}
 
 	// handles the authorization flow and displays the
@@ -87,7 +105,7 @@ func details(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := login.TokenFrom(ctx)
-	fmt.Fprintf(w, success, token.Access)
+	fmt.Fprintf(w, success, token.Access, token.Refresh)
 }
 
 // display the login form.
@@ -109,7 +127,9 @@ var loginForm = `
 var success = `
 <html>
 <body>
-<h1>Token</h1>
+<h1>Access Token</h1>
+<h2>%s</h2>
+<h1>Refresh / Secret Token</h1>
 <h2>%s</h2>
 </body>
 </html>
@@ -127,11 +147,13 @@ var failure = `
 
 func usage() {
 	fmt.Println(`Usage: go run main.go [OPTION]...
-  --provider           oauth provider (github, gitlab, gogs, gitea, bitbucket)
-  --provider-url       oauth provider url (gitea, gogs only)
-  --client-id          oauth client id
-  --client-secret      oauth client secret
-  --redirect-url       oauth redirect url
-  --address            http server address (:8080)
-  --help               display this help and exit`)
+  --provider              provider (github, gitlab, gogs, gitea, bitbucket)
+  --provider-url          provider url (gitea, gogs, stash only)
+  --client-id             oauth2 client id
+  --client-secret         oauth2 client secret
+  --consumer-key          oauth1 consumer key
+  --consumer-private-key  oauth1 consumer rsa private key file
+  --redirect-url          oauth redirect url
+  --address               http server address (:8080)
+  --help                  display this help and exit`)
 }
