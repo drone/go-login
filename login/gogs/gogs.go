@@ -7,27 +7,31 @@ package gogs
 import (
 	"net/http"
 	"strings"
+
+	"github.com/drone/go-login/login"
 )
 
-// Authorizer configures the Gogs auth provider.
-type Authorizer struct {
+var _ login.Middleware = (*Config)(nil)
+
+// Config configures the Gogs auth provider.
+type Config struct {
 	Label  string
 	Login  string
 	Server string
 	Client *http.Client
 }
 
-// Authorize returns a http.Handler that runs h at the
+// Handler returns a http.Handler that runs h at the
 // completion of the GitLab authorization flow. The GitLab
 // authorization details are available to h in the
 // http.Request context.
-func (a *Authorizer) Authorize(h http.Handler) http.Handler {
+func (c *Config) Handler(h http.Handler) http.Handler {
 	v := &handler{
 		next:   h,
-		label:  a.Label,
-		login:  a.Login,
-		server: strings.TrimSuffix(a.Server, "/"),
-		client: a.Client,
+		label:  c.Label,
+		login:  c.Login,
+		server: strings.TrimSuffix(c.Server, "/"),
+		client: c.Client,
 	}
 	if v.client == nil {
 		v.client = http.DefaultClient

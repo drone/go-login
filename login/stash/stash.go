@@ -13,8 +13,11 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/internal/oauth1"
 )
+
+var _ login.Middleware = (*Config)(nil)
 
 const (
 	requestTokenURL   = "%s/plugins/servlet/oauth/request-token"
@@ -22,9 +25,9 @@ const (
 	accessTokenURL    = "%s/plugins/servlet/oauth/access-token"
 )
 
-// Authorizer configures the Bitbucket Server (Stash)
-// authorization provider.
-type Authorizer struct {
+// Config configures the Bitbucket Server (Stash)
+// authorization middleware.
+type Config struct {
 	Address        string
 	ConsumerKey    string
 	ConsumerSecret string
@@ -33,21 +36,21 @@ type Authorizer struct {
 	Client         *http.Client
 }
 
-// Authorize returns a http.Handler that runs h at the
+// Handler returns a http.Handler that runs h at the
 // completion of the GitHub authorization flow. The GitHub
 // authorization details are available to h in the
 // http.Request context.
-func (a *Authorizer) Authorize(h http.Handler) http.Handler {
-	server := strings.TrimSuffix(a.Address, "/")
+func (c *Config) Handler(h http.Handler) http.Handler {
+	server := strings.TrimSuffix(c.Address, "/")
 	signer := &oauth1.RSASigner{
-		PrivateKey: a.PrivateKey,
+		PrivateKey: c.PrivateKey,
 	}
 	return oauth1.Handler(h, &oauth1.Config{
 		Signer:           signer,
-		Client:           a.Client,
-		ConsumerKey:      a.ConsumerKey,
-		ConsumerSecret:   a.ConsumerSecret,
-		CallbackURL:      a.CallbackURL,
+		Client:           c.Client,
+		ConsumerKey:      c.ConsumerKey,
+		ConsumerSecret:   c.ConsumerSecret,
+		CallbackURL:      c.CallbackURL,
 		AccessTokenURL:   fmt.Sprintf(accessTokenURL, server),
 		AuthorizationURL: fmt.Sprintf(authorizeTokenURL, server),
 		RequestTokenURL:  fmt.Sprintf(requestTokenURL, server),

@@ -40,28 +40,28 @@ func main() {
 		os.Exit(0)
 	}
 
-	var auther login.Authorizer
+	var middleware login.Middleware
 	switch *provider {
 	case "gogs", "gitea":
-		auther = &gogs.Authorizer{
+		middleware = &gogs.Config{
 			Login:  "/login/form",
 			Server: *providerURL,
 		}
 	case "gitlab":
-		auther = &gitlab.Authorizer{
+		middleware = &gitlab.Config{
 			ClientID:     *clientID,
 			ClientSecret: *clientSecret,
 			RedirectURL:  *redirectURL,
 			Scope:        []string{"read_user", "api"},
 		}
 	case "github":
-		auther = &github.Authorizer{
+		middleware = &github.Config{
 			ClientID:     *clientID,
 			ClientSecret: *clientSecret,
 			Scope:        []string{"repo", "user", "read:org"},
 		}
 	case "bitbucket":
-		auther = &bitbucket.Authorizer{
+		middleware = &bitbucket.Config{
 			ClientID:     *clientID,
 			ClientSecret: *clientSecret,
 			RedirectURL:  *redirectURL,
@@ -71,7 +71,7 @@ func main() {
 		if err != nil {
 			log.Fatalln("Cannot parse Private Key. %s", err)
 		}
-		auther = &stash.Authorizer{
+		middleware = &stash.Config{
 			Address:     *providerURL,
 			CallbackURL: *redirectURL,
 			ConsumerKey: *consumerKey,
@@ -82,7 +82,7 @@ func main() {
 	// handles the authorization flow and displays the
 	// authorization results at completion.
 	http.Handle("/login/form", http.HandlerFunc(form))
-	http.Handle("/login", auther.Authorize(
+	http.Handle("/login", middleware.Handler(
 		http.HandlerFunc(details),
 	))
 

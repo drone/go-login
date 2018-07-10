@@ -8,11 +8,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/internal/oauth2"
 )
 
-// Authorizer configures the GitLab auth provider.
-type Authorizer struct {
+var _ login.Middleware = (*Config)(nil)
+
+// Config configures the GitLab auth provider.
+type Config struct {
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string
@@ -21,21 +24,21 @@ type Authorizer struct {
 	Client       *http.Client
 }
 
-// Authorize returns a http.Handler that runs h at the
+// Handler returns a http.Handler that runs h at the
 // completion of the GitLab authorization flow. The GitLab
 // authorization details are available to h in the
 // http.Request context.
-func (a *Authorizer) Authorize(h http.Handler) http.Handler {
-	server := normalizeAddress(a.Server)
+func (c *Config) Handler(h http.Handler) http.Handler {
+	server := normalizeAddress(c.Server)
 	return oauth2.Handler(h, &oauth2.Config{
 		BasicAuthOff:     true,
-		Client:           a.Client,
-		ClientID:         a.ClientID,
-		ClientSecret:     a.ClientSecret,
-		RedirectURL:      a.RedirectURL,
+		Client:           c.Client,
+		ClientID:         c.ClientID,
+		ClientSecret:     c.ClientSecret,
+		RedirectURL:      c.RedirectURL,
 		AccessTokenURL:   server + "/oauth/token",
 		AuthorizationURL: server + "/oauth/authorize",
-		Scope:            a.Scope,
+		Scope:            c.Scope,
 	})
 }
 
