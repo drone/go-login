@@ -101,11 +101,11 @@ func TestLogin(t *testing.T) {
 			ctx = r.Context()
 		}
 
-		v := &Authorizer{
+		v := &Config{
 			Server: "https://try.gogs.io",
 			Login:  "/login/form",
 		}
-		h := v.Authorize(
+		h := v.Handler(
 			http.HandlerFunc(fn),
 		)
 
@@ -142,11 +142,11 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginRedirect(t *testing.T) {
-	v := &Authorizer{
+	v := &Config{
 		Server: "https://try.gogs.io",
 		Login:  "/login/form",
 	}
-	h := v.Authorize(
+	h := v.Handler(
 		http.NotFoundHandler(),
 	)
 

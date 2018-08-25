@@ -12,13 +12,13 @@ import (
 func TestAuthorizer(t *testing.T) {
 	h := http.RedirectHandler("/", 302)
 	c := new(http.Client)
-	a := Authorizer{
+	a := Config{
 		Label:  "drone",
 		Login:  "/path/to/login",
 		Server: "https://try.gogs.io/",
 		Client: c,
 	}
-	v := a.Authorize(h).(*handler)
+	v := a.Handler(h).(*handler)
 	if got, want := v.login, "/path/to/login"; got != want {
 		t.Errorf("Expect login redirect url %q, got %q", want, got)
 	}
@@ -37,11 +37,11 @@ func TestAuthorizer(t *testing.T) {
 }
 
 func TestAuthorizerDefault(t *testing.T) {
-	a := Authorizer{
+	a := Config{
 		Login:  "/path/to/login",
 		Server: "https://try.gogs.io",
 	}
-	v := a.Authorize(
+	v := a.Handler(
 		http.NotFoundHandler(),
 	).(*handler)
 	if got, want := v.label, "default"; got != want {

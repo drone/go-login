@@ -69,7 +69,7 @@ func main() {
 	case "stash":
 		privateKey, err := stash.ParsePrivateKeyFile(*consumerRsa)
 		if err != nil {
-			log.Fatalln("Cannot parse Private Key. %s", err)
+			log.Fatalf("Cannot parse Private Key. %s", err)
 		}
 		middleware = &stash.Config{
 			Address:     *providerURL,
