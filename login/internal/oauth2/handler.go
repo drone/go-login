@@ -10,17 +10,19 @@ import (
 	"time"
 
 	"github.com/drone/go-login/login"
+	"github.com/drone/go-login/login/logger"
 )
 
 // Handler returns a Handler that runs h at the completion
 // of the oauth2 authorization flow.
 func Handler(h http.Handler, c *Config) http.Handler {
-	return &handler{next: h, conf: c}
+	return &handler{next: h, conf: c, logs: c.Logger}
 }
 
 type handler struct {
 	conf *Config
 	next http.Handler
+	logs logger.Logger
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -30,6 +32,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// If non-empty, write to the context and proceed with
 	// the next http.Handler in the chain.
 	if erro := r.FormValue("error"); erro != "" {
+		h.logger().Errorf("oauth: authorization error: %s", erro)
 		ctx = login.WithError(ctx, errors.New(erro))
 		h.next.ServeHTTP(w, r.WithContext(ctx))
 		return
@@ -50,6 +53,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	state := r.FormValue("state")
 	deleteState(w)
 	if err := validateState(r, state); err != nil {
+		h.logger().Errorln("oauth: invalid or missing state")
 		ctx = login.WithError(ctx, err)
 		h.next.ServeHTTP(w, r.WithContext(ctx))
 		return
@@ -61,6 +65,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// next http.Handler in the chain.
 	source, err := h.conf.exchange(code, state)
 	if err != nil {
+		h.logger().Errorf("oauth: cannot exchange code: %s: %s", code, err)
 		ctx = login.WithError(ctx, err)
 		h.next.ServeHTTP(w, r.WithContext(ctx))
 		return
@@ -77,4 +82,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	h.next.ServeHTTP(w, r.WithContext(ctx))
+}
+
+func (h *handler) logger() logger.Logger {
+	if h.logs == nil {
+		return logger.Discard()
+	}
+	return h.logs
 }

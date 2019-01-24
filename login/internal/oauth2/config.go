@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/drone/go-login/login/logger"
 )
 
 // token stores the authorization credentials used to
@@ -53,6 +55,10 @@ type Config struct {
 	// the authorization header and provide the client_id
 	// and client_secret in the formdata.
 	BasicAuthOff bool
+
+	// Logger is used to log errors. If nil the provider
+	// use the default noop logger.
+	Logger logger.Logger
 }
 
 // authorizeRedirect returns a client authorization
