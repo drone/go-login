@@ -10,6 +10,7 @@ import (
 
 	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/internal/oauth2"
+	"github.com/drone/go-login/login/logger"
 )
 
 var _ login.Middleware = (*Config)(nil)
@@ -21,6 +22,7 @@ type Config struct {
 	ClientSecret string
 	Server       string
 	Scope        []string
+	Logger       logger.Logger
 }
 
 // Handler returns a http.Handler that runs h at the
@@ -37,6 +39,7 @@ func (c *Config) Handler(h http.Handler) http.Handler {
 		AccessTokenURL:   server + "/login/oauth/access_token",
 		AuthorizationURL: server + "/login/oauth/authorize",
 		Scope:            c.Scope,
+		Logger:           c.Logger,
 	})
 }
 
