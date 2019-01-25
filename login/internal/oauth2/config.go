@@ -59,6 +59,10 @@ type Config struct {
 	// Logger is used to log errors. If nil the provider
 	// use the default noop logger.
 	Logger logger.Logger
+
+	// Dumper is used to dump the http.Request and
+	// http.Response for debug purposes.
+	Dumper logger.Dumper
 }
 
 // authorizeRedirect returns a client authorization
@@ -103,18 +107,26 @@ func (c *Config) exchange(code, state string) (*token, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	if !c.BasicAuthOff {
 		req.SetBasicAuth(c.ClientID, c.ClientSecret)
 	}
 
-	req.Header.Set("Accept", "application/json")
+	if c.Dumper != nil {
+		c.Dumper.DumpRequest(req)
+	}
+
 	res, err := c.client().Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
+
+	if c.Dumper != nil {
+		c.Dumper.DumpResponse(res)
+	}
 
 	if res.StatusCode > 299 {
 		err := new(Error)

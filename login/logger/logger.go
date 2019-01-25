@@ -24,7 +24,7 @@ type Logger interface {
 	Warnln(args ...interface{})
 }
 
-// Discard returns a no-op logger
+// Discard returns a no-op logger.
 func Discard() Logger {
 	return &discard{}
 }

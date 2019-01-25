@@ -23,6 +23,7 @@ type Config struct {
 	Server       string
 	Scope        []string
 	Logger       logger.Logger
+	Dumper       logger.Dumper
 }
 
 // Handler returns a http.Handler that runs h at the
@@ -40,6 +41,7 @@ func (c *Config) Handler(h http.Handler) http.Handler {
 		AuthorizationURL: server + "/login/oauth/authorize",
 		Scope:            c.Scope,
 		Logger:           c.Logger,
+		Dumper:           c.Dumper,
 	})
 }
 

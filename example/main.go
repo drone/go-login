@@ -16,6 +16,7 @@ import (
 	"github.com/drone/go-login/login/github"
 	"github.com/drone/go-login/login/gitlab"
 	"github.com/drone/go-login/login/gogs"
+	"github.com/drone/go-login/login/logger"
 	"github.com/drone/go-login/login/stash"
 )
 
@@ -28,6 +29,7 @@ var (
 	consumerRsa  = flag.String("consumer-private-key", "", "")
 	redirectURL  = flag.String("redirect-url", "http://localhost:8080/login", "")
 	address      = flag.String("address", ":8080", "")
+	dump         = flag.Bool("dump", false, "")
 	help         = flag.Bool("help", false, "")
 )
 
@@ -38,6 +40,11 @@ func main() {
 	if *help {
 		flag.Usage()
 		os.Exit(0)
+	}
+
+	dumper := logger.DiscardDumper()
+	if *dump {
+		dumper = logger.StandardDumper()
 	}
 
 	var middleware login.Middleware
@@ -60,6 +67,7 @@ func main() {
 			ClientSecret: *clientSecret,
 			Server:       *providerURL,
 			Scope:        []string{"repo", "user", "read:org"},
+			Dumper:       dumper,
 		}
 	case "bitbucket":
 		middleware = &bitbucket.Config{
@@ -79,6 +87,8 @@ func main() {
 			PrivateKey:  privateKey,
 		}
 	}
+
+	log.Printf("Staring server at %s", *address)
 
 	// handles the authorization flow and displays the
 	// authorization results at completion.
