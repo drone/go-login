@@ -58,6 +58,7 @@ func main() {
 		middleware = &github.Config{
 			ClientID:     *clientID,
 			ClientSecret: *clientSecret,
+			Server:       *providerURL,
 			Scope:        []string{"repo", "user", "read:org"},
 		}
 	case "bitbucket":
