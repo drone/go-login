@@ -42,7 +42,7 @@ func (c *Config) Handler(h http.Handler) http.Handler {
 		AuthorizationURL: server + "/login/oauth/authorize",
 		Logger:           c.Logger,
 		Dumper:           c.Dumper,
-		RedirectURL: c.RedirectURL,
+		RedirectURL:      c.RedirectURL,
 	})
 }
 
