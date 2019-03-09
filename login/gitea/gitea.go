@@ -22,6 +22,7 @@ type Config struct {
 	ClientSecret string
 	Server       string
 	Scope        []string
+	RedirectURL  string
 	Logger       logger.Logger
 	Dumper       logger.Dumper
 }
@@ -39,6 +40,7 @@ func (c *Config) Handler(h http.Handler) http.Handler {
 		ClientSecret:     c.ClientSecret,
 		AccessTokenURL:   server + "/login/oauth/access_token",
 		AuthorizationURL: server + "/login/oauth/authorize",
+		RedirectURL:      c.RedirectURL,
 		Logger:           c.Logger,
 		Dumper:           c.Dumper,
 	})
