@@ -24,6 +24,7 @@ type Config struct {
 	Scope        []string
 	Logger       logger.Logger
 	Dumper       logger.Dumper
+	RedirectURL  string
 }
 
 // Handler returns a http.Handler that runs h at the
@@ -41,6 +42,7 @@ func (c *Config) Handler(h http.Handler) http.Handler {
 		AuthorizationURL: server + "/login/oauth/authorize",
 		Logger:           c.Logger,
 		Dumper:           c.Dumper,
+		RedirectURL:      c.RedirectURL,
 	})
 }
 
