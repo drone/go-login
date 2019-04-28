@@ -15,6 +15,7 @@ import (
 	"github.com/drone/go-login/login/bitbucket"
 	"github.com/drone/go-login/login/github"
 	"github.com/drone/go-login/login/gitlab"
+	"github.com/drone/go-login/login/gitee"
 	"github.com/drone/go-login/login/gogs"
 	"github.com/drone/go-login/login/logger"
 	"github.com/drone/go-login/login/stash"
@@ -60,6 +61,13 @@ func main() {
 			ClientSecret: *clientSecret,
 			RedirectURL:  *redirectURL,
 			Scope:        []string{"read_user", "api"},
+		}
+	case "gitee":
+		middleware = &gitee.Config{
+			ClientID:     *clientID,
+			ClientSecret: *clientSecret,
+			RedirectURL:  *redirectURL,
+			Scope:        []string{"user_info", "projects", "pull_requests", "hook"},
 		}
 	case "github":
 		middleware = &github.Config{
