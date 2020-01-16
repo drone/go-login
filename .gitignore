@@ -2,3 +2,5 @@
 *.env
 *.out
 _*.md
+
+.idea
