@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/drone/go-login/login"
 	"github.com/h2non/gock"
-	"github.com/sennotech/go-login/login"
 )
 
 func TestLogin(t *testing.T) {

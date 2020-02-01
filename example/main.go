@@ -11,15 +11,15 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/sennotech/go-login/login"
-	"github.com/sennotech/go-login/login/bitbucket"
-	"github.com/sennotech/go-login/login/coding"
-	"github.com/sennotech/go-login/login/gitee"
-	"github.com/sennotech/go-login/login/github"
-	"github.com/sennotech/go-login/login/gitlab"
-	"github.com/sennotech/go-login/login/gogs"
-	"github.com/sennotech/go-login/login/logger"
-	"github.com/sennotech/go-login/login/stash"
+	"github.com/drone/go-login/login"
+	"github.com/drone/go-login/login/bitbucket"
+	"github.com/drone/go-login/login/coding"
+	"github.com/drone/go-login/login/gitee"
+	"github.com/drone/go-login/login/github"
+	"github.com/drone/go-login/login/gitlab"
+	"github.com/drone/go-login/login/gogs"
+	"github.com/drone/go-login/login/logger"
+	"github.com/drone/go-login/login/stash"
 )
 
 var (

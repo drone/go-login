@@ -7,8 +7,8 @@ package bitbucket
 import (
 	"net/http"
 
-	"github.com/sennotech/go-login/login"
-	"github.com/sennotech/go-login/login/internal/oauth2"
+	"github.com/drone/go-login/login"
+	"github.com/drone/go-login/login/internal/oauth2"
 )
 
 var _ login.Middleware = (*Config)(nil)
