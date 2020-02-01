@@ -11,18 +11,19 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/drone/go-login/login"
-	"github.com/drone/go-login/login/bitbucket"
-	"github.com/drone/go-login/login/github"
-	"github.com/drone/go-login/login/gitlab"
-	"github.com/drone/go-login/login/gitee"
-	"github.com/drone/go-login/login/gogs"
-	"github.com/drone/go-login/login/logger"
-	"github.com/drone/go-login/login/stash"
+	"github.com/sennotech/go-login/login"
+	"github.com/sennotech/go-login/login/bitbucket"
+	"github.com/sennotech/go-login/login/coding"
+	"github.com/sennotech/go-login/login/gitee"
+	"github.com/sennotech/go-login/login/github"
+	"github.com/sennotech/go-login/login/gitlab"
+	"github.com/sennotech/go-login/login/gogs"
+	"github.com/sennotech/go-login/login/logger"
+	"github.com/sennotech/go-login/login/stash"
 )
 
 var (
-	provider     = flag.String("provider", "github", "")
+	provider     = flag.String("provider", "coding", "")
 	providerURL  = flag.String("provider-url", "", "")
 	clientID     = flag.String("client-id", "", "")
 	clientSecret = flag.String("client-secret", "", "")
@@ -82,6 +83,11 @@ func main() {
 			ClientID:     *clientID,
 			ClientSecret: *clientSecret,
 			RedirectURL:  *redirectURL,
+		}
+	case "coding":
+		middleware = &coding.Config{
+			ClientID:     *clientID,
+			ClientSecret: *clientSecret,
 		}
 	case "stash":
 		privateKey, err := stash.ParsePrivateKeyFile(*consumerRsa)

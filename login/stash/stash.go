@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/drone/go-login/login"
-	"github.com/drone/go-login/login/internal/oauth1"
+	"github.com/sennotech/go-login/login"
+	"github.com/sennotech/go-login/login/internal/oauth1"
 )
 
 var _ login.Middleware = (*Config)(nil)

@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/drone/go-login/login/logger"
+	"github.com/sennotech/go-login/login/logger"
 )
 
 // token stores the authorization credentials used to
