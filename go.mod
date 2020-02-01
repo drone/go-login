@@ -1,4 +1,4 @@
-module github.com/drone/go-login
+module github.com/sennotech/go-login
 
 require (
 	github.com/davecgh/go-spew v1.1.1
