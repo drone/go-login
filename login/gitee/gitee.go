@@ -10,6 +10,7 @@ import (
 
 	"github.com/drone/go-login/login"
 	"github.com/drone/go-login/login/internal/oauth2"
+	"github.com/drone/go-login/login/logger"
 )
 
 var _ login.Middleware = (*Config)(nil)
@@ -21,6 +22,7 @@ type Config struct {
 	RedirectURL  string
 	Server       string
 	Scope        []string
+	Logger       logger.Logger
 	Client       *http.Client
 }
 
